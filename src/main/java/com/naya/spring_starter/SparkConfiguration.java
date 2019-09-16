@@ -4,6 +4,7 @@ import com.naya.spring_starter.annotations.AutowiredBroadcastBeanPostProcessor;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.SQLContext;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -20,7 +21,14 @@ public class SparkConfiguration {
     }
 
     @Bean
-    public JavaSparkContext sparkConfiguration() {
+    @ConditionalOnMissingBean
+    public JavaSparkContext sparkConfiguration(SparkConf sparkConf) {
+        return new JavaSparkContext(sparkConf);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public SparkConf sparkConf() {
         SparkConf sparkConf = new SparkConf();
 
         String master = sparkProperties == null
@@ -33,13 +41,13 @@ public class SparkConfiguration {
 
         sparkConf.setMaster(master);
         sparkConf.setAppName(appName);
-
-        return new JavaSparkContext(sparkConf);
+        return sparkConf;
     }
 
     @Bean
-    public SQLContext sqlContext() {
-        return new SQLContext(sparkConfiguration());
+    @ConditionalOnMissingBean
+    public SQLContext sqlContext(JavaSparkContext sc) {
+        return new SQLContext(sc);
     }
 
     @Bean
@@ -47,5 +55,4 @@ public class SparkConfiguration {
                                                                                    ApplicationContext applicationContext) {
         return new AutowiredBroadcastBeanPostProcessor(sparkContext, applicationContext);
     }
-
 }
